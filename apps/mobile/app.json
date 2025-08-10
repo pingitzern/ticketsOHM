@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Ticketing Mobile",
+    "slug": "ticketing-mobile",
+    "scheme": "ticketing",
+    "version": "1.0.0",
+    "sdkVersion": "51.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "orientation": "portrait",
+    "extra": {
+      "eas": {
+        "projectId": "99ad29a2-c3e0-4432-8fbb-973980ed9362"
+      }
+    },
+    "owner": "nicolaspingitzer"
+  }
+}

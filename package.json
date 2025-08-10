@@ -1,0 +1,12 @@
+{
+  "name": "ticketing-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "packages/db"
+  ],
+  "devDependencies": {
+    "@types/qrcode": "^1.5.5"
+  }
+}

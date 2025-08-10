@@ -1,0 +1,20 @@
+{
+  "name": "mobile",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "expo start"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.28.2",
+    "@supabase/supabase-js": "2.45.4",
+    "babel-preset-expo": "~11.0.15",
+    "expo": "~51.0.0",
+    "expo-barcode-scanner": "~13.0.1",
+    "expo-camera": "~15.0.16",
+    "expo-constants": "~16.0.2",
+    "expo-notifications": "~0.28.19",
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  }
+}
