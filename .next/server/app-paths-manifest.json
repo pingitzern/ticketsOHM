@@ -1,6 +1,6 @@
 {
-  "/api/ticket-push/route": "app/api/ticket-push/route.js",
+  "/api/reports/monthly/route": "app/api/reports/monthly/route.js",
   "/page": "app/page.js",
   "/tickets/page": "app/tickets/page.js",
-  "/tickets/[id]/page": "app/tickets/[id]/page.js"
+  "/reports/page": "app/reports/page.js"
 }

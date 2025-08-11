@@ -1,8 +1,8 @@
-// File: /workspaces/ticketsOHM/app/api/ticket-push/route.ts
-import * as entry from '../../../../../app/api/ticket-push/route.js'
+// File: /workspaces/ticketsOHM/app/api/kpi/tenant/route.ts
+import * as entry from '../../../../../../app/api/kpi/tenant/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../app/api/ticket-push/route.js')
+type TEntry = typeof import('../../../../../../app/api/kpi/tenant/route.js')
 
 type SegmentParams<T extends Object = any> = T extends Record<string, any>
   ? { [K in keyof T]: T[K] extends string ? string | string[] | undefined : never }

@@ -1,4 +1,4 @@
-'use client'
+app/tickets/page.tsx'use client'
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'

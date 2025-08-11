@@ -10,20 +10,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/api/kpi/tenant/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/kpi/tenant/route.js"
+    ],
+    "/reports/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/reports/page.js"
+    ],
+    "/api/reports/monthly/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/reports/monthly/route.js"
+    ],
     "/tickets/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/tickets/page.js"
-    ],
-    "/tickets/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/tickets/[id]/page.js"
-    ],
-    "/api/ticket-push/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/ticket-push/route.js"
     ]
   }
 }
