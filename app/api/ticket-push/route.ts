@@ -1,50 +1,115 @@
-// app/api/ticket-push/route.ts
 import { NextResponse } from 'next/server';
+
+const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PUSH_WEBHOOK_SECRET } = process.env;
 
 export async function POST(req: Request) {
   try {
-    const { ticket_id, msg } = await req.json();
-
-    if (!ticket_id || !msg) {
-      return NextResponse.json({ error: 'ticket_id y msg son requeridos' }, { status: 400 });
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !PUSH_WEBHOOK_SECRET) {
+      return NextResponse.json({ message: 'Server envs faltantes' }, { status: 500 });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const pushSecret = process.env.PUSH_SECRET;
-
-    if (!url || !anon || !pushSecret) {
-      return NextResponse.json(
-        { error: 'Faltan envs (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / PUSH_SECRET)' },
-        { status: 500 }
-      );
+    // auth simple por header
+    const secret = req.headers.get('x-push-secret');
+    if (secret !== PUSH_WEBHOOK_SECRET) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Lo que espera la Edge: ticket_id + event_type (+ payload)
-    const body = {
-      ticket_id,
-      event_type: 'comment',
-      payload: { msg },
-    };
+    const body = await req.json().catch(() => ({}));
+    const required = ['qr_slug', 'user_legajo', 'user_name', 'user_phone', 'reason'] as const;
+    for (const f of required) {
+      if (!body?.[f] || typeof body[f] !== 'string') {
+        return NextResponse.json({ message: `Falta campo: ${f}` }, { status: 400 });
+      }
+    }
 
-    const resp = await fetch(`${url}/functions/v1/ticket-push`, {
-      method: 'POST',
+    // 1) Buscar device por qr_slug
+    const devUrl = new URL(`${SUPABASE_URL}/rest/v1/devices`);
+    devUrl.searchParams.set('select', 'id,tenant_id,site_id,code,location_hint');
+    devUrl.searchParams.set('qr_slug', `eq.${body.qr_slug}`);
+    devUrl.searchParams.set('limit', '1');
+
+    const devRes = await fetch(devUrl, {
       headers: {
-        'Content-Type': 'application/json',
-        apikey: anon,
-        Authorization: `Bearer ${anon}`,
-        'x-push-secret': pushSecret,
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       },
-      body: JSON.stringify(body),
+      cache: 'no-store',
     });
 
-    const text = await resp.text();
-    if (!resp.ok) {
-      return new NextResponse(text || 'Edge function error', { status: resp.status });
+    if (!devRes.ok) {
+      const err = await devRes.text();
+      return NextResponse.json({ message: 'Error buscando device', error: err }, { status: devRes.status });
     }
 
-    return new NextResponse(text, { status: 200 });
+    const devRows = await devRes.json();
+    const device = devRows?.[0];
+    if (!device) {
+      return NextResponse.json({ message: 'QR no válido (device no encontrado)' }, { status: 404 });
+    }
+
+    // 2) Crear ticket
+    const ticketPayload = {
+      tenant_id: device.tenant_id,
+      source: 'qr',
+      created_by: body.user_legajo,
+      // si tu tabla tickets tiene otras columnas obligatorias, agregalas acá
+    };
+
+    const tkRes = await fetch(`${SUPABASE_URL}/rest/v1/tickets`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(ticketPayload),
+    });
+
+    if (!tkRes.ok) {
+      const err = await tkRes.text();
+      return NextResponse.json({ message: 'No se pudo crear el ticket', error: err }, { status: tkRes.status });
+    }
+
+    const tkRows = await tkRes.json();
+    const ticket = tkRows?.[0];
+    if (!ticket?.id) {
+      return NextResponse.json({ message: 'Ticket creado sin ID' }, { status: 500 });
+    }
+
+    // 3) Insertar evento "created" (CLAVE para el reporte mensual)
+    const eventPayload = {
+      qr_slug: body.qr_slug,
+      device_code: device.code,
+      location_hint: device.location_hint,
+      user_legajo: body.user_legajo,
+      user_name: body.user_name,
+      user_phone: body.user_phone,
+      reason: body.reason,
+    };
+
+    const evRes = await fetch(`${SUPABASE_URL}/rest/v1/ticket_events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ticket_id: ticket.id,
+        event_type: 'created',
+        payload: eventPayload,
+      }),
+    });
+
+    if (!evRes.ok) {
+      const err = await evRes.text();
+      // devolvemos 207 si el ticket está pero falló el evento
+      return NextResponse.json({ ticket_id: ticket.id, message: 'Ticket creado sin evento created', error: err }, { status: 207 });
+    }
+
+    return NextResponse.json({ ticket_id: ticket.id }, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ message: 'Error inesperado', error: e?.message }, { status: 500 });
   }
 }
