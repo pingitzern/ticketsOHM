@@ -1,0 +1,17 @@
+name: Instalar Supabase CLI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  install-supabase-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        run: curl -sL https://supabase.com/cli/install | bash
+
+      - name: Verificar instalación
+        run: supabase --version
